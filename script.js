@@ -66,8 +66,8 @@ function calculate() {
 }
 
 function parseExpression(expression) {
-    // Add explicit multiplication for implicit cases like 5(2+1)
-    expression = expression.replace(/(\d)\(/g, '$1*(');
+    // Add explicit multiplication for implicit cases like 5(2+1) and (2)(3)
+    expression = expression.replace(/(\d)\(/g, '$1*(').replace(/\)\(/g, ')*(');
     const tokens = expression.replace(/\s/g, '').match(/(-?\d*\.?\d+)|([+\-*/()])/g);
     if (!tokens) return 'Error';
 
@@ -87,7 +87,10 @@ function parseExpression(expression) {
             while (operators.length && operators[operators.length - 1] !== '(') {
                 rpn.push(operators.pop());
             }
-            operators.pop();
+            if (operators.length === 0 || operators[operators.length - 1] !== '(') {
+                throw new Error('Mismatched parentheses');
+            }
+            operators.pop(); // Pop '('
             lastTokenWasOperator = false;
         } else { // Operator
             if (token === '-' && lastTokenWasOperator) {
@@ -103,7 +106,11 @@ function parseExpression(expression) {
     }
 
     while (operators.length) {
-        rpn.push(operators.pop());
+        const op = operators.pop();
+        if (op === '(') {
+            throw new Error('Mismatched parentheses');
+        }
+        rpn.push(op);
     }
 
     const stack = [];
